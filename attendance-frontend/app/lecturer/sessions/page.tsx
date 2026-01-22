@@ -1,8 +1,10 @@
+/* eslint-disable @next/next/no-img-element */
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { api } from "@/lib/api";
 
 type Course = {
@@ -11,165 +13,150 @@ type Course = {
   title: string;
 };
 
-type CreateSessionApiResponse = {
-  session: {
-    id: string;
-    course: string;
-    startsAt: string;
-    endsAt: string;
-    status: "open" | "closed";
-  };
-  qr: {
-    text: string; // JSON string {"code":"...","courseId":"..."}
-    dataUrl: string; // data:image/png;base64,...
-  };
-};
-
 export default function LecturerSessionsPage() {
   const [courses, setCourses] = useState<Course[]>([]);
-  const [courseId, setCourseId] = useState<string>("");
+  const [courseId, setCourseId] = useState("");
+  const [durationMins, setDurationMins] = useState(10);
 
-  const [durationMins, setDurationMins] = useState<number>(15);
-
-  // active session state
-  const [sessionId, setSessionId] = useState<string>("");
-  const [sessionCode, setSessionCode] = useState<string>("");
+  const [sessionId, setSessionId] = useState("");
+  const [sessionCode, setSessionCode] = useState("");
   const [status, setStatus] = useState<"open" | "closed">("open");
-  const [qrDataUrl, setQrDataUrl] = useState<string>("");
+
+  const [qrDataUrl, setQrDataUrl] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   const selectedCourse = useMemo(
-    () => courses.find((c) => c._id === courseId) || null,
+    () => courses.find((c) => c._id === courseId),
     [courses, courseId]
   );
 
+  useEffect(() => {
+    loadMyCourses();
+  }, []);
+
   async function loadMyCourses() {
-    setErr(null);
     setLoading(true);
+    setErr(null);
+
     try {
-      // backend: GET /api/courses/my (lecturer)
-      const data = await api<Course[]>("/courses/my", { method: "GET" });
+      const data = await api<Course[]>("/courses/my");
       setCourses(data);
       if (!courseId && data[0]) setCourseId(data[0]._id);
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : "Failed to load courses";
-      setErr(message);
+    } catch {
+      setErr("Failed to load courses");
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => {
-    loadMyCourses();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   async function createSession() {
+    if (!courseId) return;
+
+    setLoading(true);
     setErr(null);
     setMsg(null);
 
-    if (!courseId) {
-      setErr("Please select a course.");
-      return;
-    }
-
-    setLoading(true);
     try {
-      // IMPORTANT: backend expects { durationMinutes }, not durationMins
-      const data = await api<CreateSessionApiResponse>(
-        `/attendance/course/${courseId}/sessions`,
-        {
-          method: "POST",
-          body: JSON.stringify({ durationMinutes: durationMins }),
-        }
-      );
+      const data = await api<any>(`/attendance/course/${courseId}/sessions`, {
+        method: "POST",
+        body: JSON.stringify({ durationMinutes: durationMins }),
+      });
 
-      // session fields
-      setSessionId(data.session.id);
-      setStatus(data.session.status);
+    const newSessionId =
+      data?.session?.id || data?.session?._id || data?.sessionId || data?.id;
 
-      // use backend QR dataUrl (fast + reliable)
-      setQrDataUrl(data.qr.dataUrl);
+    const newStatus = (data?.session?.status || data?.status || "open") as "open" | "closed";
 
-      // extract code from qr.text JSON
-      const parsed = JSON.parse(data.qr.text) as { code: string; courseId: string };
-      setSessionCode(parsed.code);
+    const newQr = data?.qr?.dataUrl || "";
+    const newCode = data?.qr?.text || data?.qr?.code || data?.session?.code || "";
+    
+    let attendanceCode = "";
 
-      setMsg("✅ Attendance session created. Display the QR code to students.");
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : "Failed to create session";
-      setErr(message);
+if (newCode) {
+  try {
+    const parsed = JSON.parse(newCode);
+    attendanceCode = parsed.code;
+  } catch {
+    attendanceCode = newCode;
+  }
+}
+
+    setSessionId(String(newSessionId));
+    setStatus(newStatus);
+    setQrDataUrl(String(newQr));
+    setSessionCode(attendanceCode); 
+
+      setMsg("Attendance session created. Display QR code to students.");
+    } catch (e: any) {
+      setErr(e?.message || "Failed to create session");
     } finally {
       setLoading(false);
     }
   }
 
   async function endSession() {
-    setErr(null);
-    setMsg(null);
-
     if (!sessionId) return;
 
     setLoading(true);
-    try {
-      // backend: PATCH /api/attendance/sessions/:sessionId/end
-      await api(`/attendance/sessions/${sessionId}/end`, { method: "PATCH" });
+    setErr(null);
+    setMsg(null);
 
+    try {
+      await api(`/attendance/sessions/${sessionId}/end`, { method: "PATCH" });
       setStatus("closed");
-      setMsg("✅ Session ended.");
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : "Failed to end session";
-      setErr(message);
+      setMsg("Session ended successfully.");
+    } catch {
+      setErr("Failed to end session");
     } finally {
       setLoading(false);
     }
   }
 
-  function copyCode() {
-    if (!sessionCode) return;
-    navigator.clipboard.writeText(sessionCode);
-    setMsg("✅ Attendance code copied.");
-  }
-
   return (
-    <div className="min-h-screen bg-gray-100 py-10">
-      <div className="max-w-5xl mx-auto px-6 space-y-6">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-green-900 via-emerald-800 to-green-700 px-4 relative">
+
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.35),transparent_65%)]" />
+
+      <div className="relative w-full max-w-4xl bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-blue-900">
+            <h1 className="text-2xl font-bold text-green-900">
               Lecturer • Attendance Sessions
             </h1>
             <p className="text-sm text-gray-600">
-              Select a course, create a session, and show the QR code.
+              Create sessions and display QR codes.
             </p>
           </div>
-          <Link className="underline" href="/lecturer">
+
+          <Link
+            href="/lecturer"
+            className="text-sm font-medium text-green-800 hover:underline"
+          >
             Back
           </Link>
         </div>
 
         {(msg || err) && (
           <div
-            className={`border rounded-xl p-3 text-sm ${
+            className={`rounded-lg border p-3 text-sm ${
               err
                 ? "border-red-200 bg-red-50 text-red-700"
-                : "border-green-200 bg-green-50 text-green-700"
+                : "border-green-200 bg-green-50 text-green-800"
             }`}
           >
             {err || msg}
           </div>
         )}
 
-        {/* Select Course */}
-        <div className="bg-white border rounded-2xl p-5 space-y-4">
-          <h2 className="text-lg font-semibold text-black">Select Course</h2>
+        <div className="rounded-xl border bg-white p-5 space-y-4">
+          <h2 className="font-semibold text-gray-900">Select Course</h2>
 
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex flex-wrap gap-3 items-center">
             <select
-              className="w-full sm:w-105 border border-gray-300 rounded-lg p-3 bg-white text-gray-800"
+              className="border rounded-lg p-3 min-w-65 text-gray-700"
               value={courseId}
               onChange={(e) => setCourseId(e.target.value)}
             >
@@ -181,22 +168,21 @@ export default function LecturerSessionsPage() {
             </select>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-700">Duration</span>
+              <span className="text-sm text-gray-600">Duration</span>
               <input
-                className="border border-gray-300 rounded-lg p-2 w-20 text-gray-800"
                 type="number"
                 min={1}
-                max={180}
+                className="border rounded-lg p-2 w-20 text-gray-700"
                 value={durationMins}
                 onChange={(e) => setDurationMins(Number(e.target.value))}
               />
-              <span className="text-sm text-gray-700">mins</span>
+              <span className="text-sm text-gray-600">mins</span>
             </div>
 
             <button
               onClick={createSession}
-              disabled={loading || !courseId}
-              className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-5 py-2 transition disabled:opacity-60"
+              disabled={loading}
+              className="bg-green-700 hover:bg-green-800 disabled:bg-gray-300 text-white rounded-lg px-5 py-2 text-sm transition"
             >
               Create Session
             </button>
@@ -204,35 +190,27 @@ export default function LecturerSessionsPage() {
             <button
               onClick={loadMyCourses}
               disabled={loading}
-              className="border rounded-lg px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-60"
+              className="border rounded-lg px-4 py-2 text-sm bg-green-700 hover:bg-green-800 disabled:bg-gray-300 text-white transition"
             >
               Refresh
             </button>
           </div>
 
           {selectedCourse && (
-            <p className="text-sm text-gray-600">
-              Selected:{" "}
-              <span className="font-medium text-gray-900">
-                {selectedCourse.code} — {selectedCourse.title}
-              </span>
+            <p className="text-xs text-gray-500">
+              Selected: {selectedCourse.code} — {selectedCourse.title}
             </p>
           )}
         </div>
 
-        {/* QR + Code */}
-        <div className="bg-white border rounded-2xl p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-black">QR Code</h2>
+        <div className="rounded-xl border bg-white p-5 space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="font-semibold text-gray-900">QR Code</h2>
 
             <button
               onClick={endSession}
               disabled={!sessionId || status === "closed" || loading}
-              className={`px-4 py-2 rounded-lg border text-sm transition bg-blue-600 hover:bg-blue-700 ${
-                !sessionId || status === "closed"
-                  ? ""
-                  : ""
-              }`}
+              className="bg-green-700 hover:bg-green-800 disabled:bg-gray-300 text-white rounded-lg px-4 py-2 text-sm transition"
             >
               End Session
             </button>
@@ -240,75 +218,45 @@ export default function LecturerSessionsPage() {
 
           {!sessionId ? (
             <p className="text-sm text-gray-600">
-              Create a session to generate a QR code for students.
+              Create a session to generate a QR code.
             </p>
           ) : (
-            <div className="grid md:grid-cols-2 gap-6 items-start">
-              {/* QR Image */}
-              <div className="border rounded-xl p-4 bg-gray-50">
-                <p className="text-sm text-gray-700 mb-3">
-                  Students should scan this QR and submit attendance.
-                </p>
-
-                <div className="bg-white rounded-xl p-3 inline-block">
-                  {/* dataUrl is easiest; Next Image supports it but we keep unoptimized */}
-                  <Image
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-center">
+                {qrDataUrl ? (
+                  <img
                     src={qrDataUrl}
                     alt="Attendance QR"
-                    width={260}
-                    height={260}
-                    unoptimized
+                    className="w-65 h-65"
                   />
-                </div>
+                ) : (
+                  <p className="text-sm text-red-600">QR not available</p>
+                )}
               </div>
 
-              {/* Code + Status */}
-              <div className="space-y-4">
-                <div className="text-sm">
-                  <span className="text-gray-600">Session Status: </span>
-                  <span
-                    className={`font-semibold ${
-                      status === "open" ? "text-green-700" : "text-gray-600"
-                    }`}
-                  >
-                    {status}
-                  </span>
-                </div>
+              <div className="space-y-3">
+                <p className="text-sm text-black">
+                  Status:{" "}
+                  <span className="font-semibold text-green-700">{status}</span>
+                </p>
 
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-700 font-semibold">
-                    Attendance Code
-                  </p>
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      readOnly
-                      value={sessionCode}
-                      className="w-full border rounded-lg p-2 font-mono text-sm text-gray-800"
-                    />
-                    <button
-                      onClick={copyCode}
-                      className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 transition"
-                    >
-                      Copy
-                    </button>
-                  </div>
-
-                  <p className="text-xs text-gray-500">
-                    Students can paste this code into their “Mark Attendance” page.
-                  </p>
+                <div>
+                  <p className="text-sm font-semibold text-black">Attendance Code</p>
+                  <input
+                    readOnly
+                    value={sessionCode}
+                    className="w-full border rounded-lg p-2 font-mono text-sm text-gray-700"
+                  />
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        <p className="text-xs text-gray-500">
-          Note: internal IDs and raw JSON are hidden for a cleaner lecturer experience.
+        <p className="text-xs text-center text-gray-500">
+          UNN Attendance System • Lecturer Access
         </p>
       </div>
     </div>
   );
 }
-
-

@@ -18,7 +18,7 @@ export const listUsers = async (req, res) => {
     const { role } = req.query;
 
     const filter = {};
-    if (role) filter.role = role; // "admin" | "lecturer" | "student"
+    if (role) filter.role = role;
 
     const users = await User.find(filter)
       .select("_id name email role")

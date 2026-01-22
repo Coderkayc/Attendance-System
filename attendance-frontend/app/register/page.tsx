@@ -1,192 +1,119 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import Link from "next/link";
-
+import { useRouter } from "next/navigation";
+import AuthShell from "@/components/AuthShell";
 import { api } from "@/lib/api";
-import { saveAuth } from "@/lib/auth";
-import type { LoginResponse } from "@/lib/types";
-
-type Role = "admin" | "lecturer" | "student";
-
-type RegisterPayload = {
-  name: string;
-  email: string;
-  password: string;
-  role: Role;
-  matric?: string;
-  staffId?: string;
-};
-
-function setCookie(name: string, value: string) {
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/`;
-}
-
-function getErrorMessage(err: unknown) {
-  if (err instanceof Error) return err.message;
-  if (typeof err === "string") return err;
-  return "Something went wrong";
-}
 
 export default function RegisterPage() {
   const router = useRouter();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [role, setRole] = useState<"student" | "lecturer" | "admin">("student");
   const [password, setPassword] = useState("");
-
-  const [role, setRole] = useState<Role>("student");
-  const [matric, setMatric] = useState("");
-  const [staffId, setStaffId] = useState("");
-
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
+  const [error, setError] = useState<string>("");
 
-  const needsMatric = useMemo(() => role === "student", [role]);
-  const needsStaffId = useMemo(() => role === "lecturer", [role]);
-
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setErr(null);
+    setError("");
     setLoading(true);
 
     try {
-      const payload: RegisterPayload = {
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        password,
-        role,
-      };
-
-      if (needsMatric) payload.matric = matric.trim();
-      if (needsStaffId) payload.staffId = staffId.trim();
-
-      const data = await api<LoginResponse>("/auth/register", {
+      await api("/auth/register", {
         method: "POST",
-        auth: false,
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password: password.trim(),
+          role,
+        }),
       });
 
-      saveAuth(data.token, data.user);
-      setCookie("att_token", data.token);
-      setCookie("att_role", data.user.role);
-
-      router.push(`/${data.user.role}`);
-    } catch (e: unknown) {
-      setErr(getErrorMessage(e) || "Register failed");
+      router.push("/login");
+    } catch (err: any) {
+      setError(err?.message || "Registration failed");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 shadow">
-        <h1 className="text-2xl font-semibold">Register</h1>
-        <p className="text-sm text-white/70 mt-1">
-          Create your account.
-        </p>
+    <AuthShell
+      title="Create your account"
+      subtitle="Register as a student, lecturer, or admin to use the system."
+    >
+      <h2 className="text-2xl font-bold text-gray-900">Register</h2>
+      <p className="text-sm text-gray-600 mt-1">Create an account to continue.</p>
 
-        {err && (
-          <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">
-            {err}
-          </div>
-        )}
+      {error ? (
+        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      ) : null}
 
-        <form onSubmit={onSubmit} className="mt-6 space-y-4">
-          <div>
-            <label className="block text-sm mb-1">Full name</label>
-            <input
-              className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 outline-none focus:border-white/30"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="John Doe"
-              required
-            />
-          </div>
+      <form onSubmit={onSubmit} className="mt-6 space-y-4">
+        <div>
+          <label className="text-sm font-medium text-gray-700">Full name</label>
+          <input
+            className="mt-1 w-full rounded-lg border border-green-900 bg-white p-3 text-gray-900 outline-none focus:ring-2 focus:ring-green-800"
+            placeholder="Mary John"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
 
-          <div>
-            <label className="block text-sm mb-1">Email</label>
-            <input
-              type="email"
-              className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 outline-none focus:border-white/30"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-            />
-          </div>
+        <div>
+          <label className="text-sm font-medium text-gray-700">Email</label>
+          <input
+            className="mt-1 w-full rounded-lg border border-green-900 bg-white p-3 text-gray-900 outline-none focus:ring-2 focus:ring-green-800"
+            placeholder="you@uni.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
 
-          <div>
-            <label className="block text-sm mb-1">Password</label>
-            <input
-              type="password"
-              className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 outline-none focus:border-white/30"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm mb-1">Role</label>
-            <select
-              aria-label="Role"
-              className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 outline-none focus:border-white/30"
-              value={role}
-              onChange={(e) => setRole(e.target.value as Role)}
-            >
-              <option value="student">Student</option>
-              <option value="lecturer">Lecturer</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-
-          {needsMatric && (
-            <div>
-              <label className="block text-sm mb-1">Matric number</label>
-              <input
-                className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 outline-none focus:border-white/30"
-                value={matric}
-                onChange={(e) => setMatric(e.target.value)}
-                placeholder="e.g. CSC/2021/1234"
-                required
-              />
-            </div>
-          )}
-
-          {needsStaffId && (
-            <div>
-              <label className="block text-sm mb-1">Staff ID</label>
-              <input
-                className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 outline-none focus:border-white/30"
-                value={staffId}
-                onChange={(e) => setStaffId(e.target.value)}
-                placeholder="e.g. LEC-1029"
-                required
-              />
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-xl bg-white text-black py-2 font-medium disabled:opacity-60"
+        <div>
+          <label className="text-sm font-medium text-gray-700">Role</label>
+          <select
+            className="mt-1 w-full rounded-lg border border-green-900 bg-white p-3 text-gray-900 outline-none focus:ring-2 focus:ring-green-800"
+            value={role}
+            onChange={(e) => setRole(e.target.value as any)}
           >
-            {loading ? "Creating account..." : "Register"}
-          </button>
-        </form>
+            <option value="student">Student</option>
+            <option value="lecturer">Lecturer</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
 
-        <p className="mt-5 text-sm text-white/70">
+        <div>
+          <label className="text-sm font-medium text-gray-700">Password</label>
+          <input
+            type="password"
+            className="mt-1 w-full rounded-lg border border-green-900 bg-white p-3 text-gray-900 outline-none focus:ring-2 focus:ring-green-800"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+
+        <button
+          disabled={loading}
+          className="w-full rounded-lg bg-green-900 px-4 py-3 font-semibold text-white hover:bg-green-700 disabled:opacity-60"
+        >
+          {loading ? "Creating..." : "Create account"}
+        </button>
+
+        <p className="text-sm text-gray-600">
           Already have an account?{" "}
-          <Link className="text-white underline" href="/login">
+          <Link className="font-semibold text-black hover:underline" href="/login">
             Login
           </Link>
         </p>
-      </div>
-    </div>
+      </form>
+    </AuthShell>
   );
 }
-

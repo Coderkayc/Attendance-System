@@ -44,20 +44,17 @@ export default function ProfileMenu() {
   function handleLogout() {
     clearCookie("att_token");
     clearCookie("att_role");
-    localStorage.removeItem("auth"); // if you store auth here
+    localStorage.removeItem("auth");
     router.push("/login");
   }
 
   function goProfile() {
-    // simple profile route per role (you can change later)
-    // Example: /admin/profile, /lecturer/profile, /student/profile
     router.push(`/${role}/profile`);
     setOpen(false);
   }
 
   return (
     <div className="relative" ref={ref}>
-      {/* Avatar Button */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -66,8 +63,7 @@ export default function ProfileMenu() {
       >
         {initial}
       </button>
-
-      {/* Dropdown */}
+      
       {open && (
         <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-xl border border-white/10 bg-black/90 shadow-lg">
           <div className="px-3 py-2 text-xs text-white/60 border-b border-white/10">

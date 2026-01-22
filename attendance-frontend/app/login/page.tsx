@@ -1,125 +1,102 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-
+import { useRouter } from "next/navigation";
+import AuthShell from "@/components/AuthShell";
 import { api } from "@/lib/api";
 import { saveAuth } from "@/lib/auth";
-import type { LoginResponse } from "@/lib/types";
 
-type LoginPayload = {
-  email: string;
-  password: string;
+type LoginResponse = {
+  token: string;
+  user: { _id: string; name: string; email: string; role: "admin" | "lecturer" | "student" };
 };
-
-function setCookie(name: string, value: string) {
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/`;
-}
-
-function getErrorMessage(err: unknown) {
-  if (err instanceof Error) return err.message;
-  if (typeof err === "string") return err;
-  return "Something went wrong";
-}
 
 export default function LoginPage() {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
+  const [error, setError] = useState<string>("");
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setErr(null);
+    setError("");
     setLoading(true);
 
     try {
-      const payload: LoginPayload = {
-        email: email.trim().toLowerCase(),
-        password,
-      };
-
       const data = await api<LoginResponse>("/auth/login", {
         method: "POST",
-        auth: false,
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password: password.trim(),
+        }),
       });
 
-      // store (localStorage or whatever your saveAuth does)
       saveAuth(data.token, data.user);
 
-      // cookies for middleware/route guarding
-      setCookie("att_token", data.token);
-      setCookie("att_role", data.user.role);
-
-      router.push(`/${data.user.role}`);
-    } catch (e: unknown) {
-      setErr(getErrorMessage(e) || "Login failed");
+      if (data.user.role === "admin") router.push("/admin");
+      else if (data.user.role === "lecturer") router.push("/lecturer");
+      else router.push("/student");
+    } catch (err: any) {
+      setError(err?.message || "Login failed");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 shadow">
-        <h1 className="text-2xl font-semibold">Login</h1>
-        <p className="text-sm text-white/70 mt-1">
-          Sign in to continue.
-        </p>
+    <AuthShell
+      title="Welcome back"
+      subtitle="Login to manage courses, create sessions, or mark attendance."
+    >
+      <h2 className="text-2xl font-bold text-gray-900">Login</h2>
+      <p className="text-sm text-gray-600 mt-1">Sign in to continue.</p>
 
-        {err && (
-          <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">
-            {err}
-          </div>
-        )}
+      {error ? (
+        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {error} 
+        </div>
+      ) : null}
 
-        <form onSubmit={onSubmit} className="mt-6 space-y-4">
-          <div>
-            <label className="block text-sm mb-1">Email</label>
-            <input
-              type="email"
-              className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 outline-none focus:border-white/30"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-            />
-          </div>
+      <form onSubmit={onSubmit} className="mt-6 space-y-4">
+        <div>
+          <label className="text-sm font-medium text-gray-700">Email</label>
+          <input
+            className="mt-1 w-full rounded-lg border border-green-900 bg-white p-3 text-gray-900 outline-none focus:ring-2 focus:ring-green-800"
+            placeholder="you@uni.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
 
-          <div>
-            <label className="block text-sm mb-1">Password</label>
-            <input
-              type="password"
-              className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 outline-none focus:border-white/30"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-            />
-          </div>
+        <div>
+          <label className="text-sm font-medium text-gray-700">Password</label>
+          <input
+            type="password"
+            className="mt-1 w-full rounded-lg border border-green-900 bg-white p-3 text-gray-900 outline-none focus:ring-2 focus:ring-green-800"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-xl bg-white text-black py-2 font-medium disabled:opacity-60"
-          >
-            {loading ? "Signing in..." : "Login"}
-          </button>
-        </form>
+        <button
+          disabled={loading}
+          className="w-full rounded-lg bg-green-900 px-4 py-3 font-semibold text-white hover:bg-green-700 disabled:opacity-60"
+        >
+          {loading ? "Signing in..." : "Login"}
+        </button>
 
-        <p className="mt-5 text-sm text-white/70">
+        <p className="text-sm text-gray-600">
           Don’t have an account?{" "}
-          <Link className="text-white underline" href="/register">
+          <Link className="font-semibold text-black hover:underline" href="/register">
             Register
           </Link>
         </p>
-      </div>
-    </div>
+      </form>
+    </AuthShell>
   );
 }
-

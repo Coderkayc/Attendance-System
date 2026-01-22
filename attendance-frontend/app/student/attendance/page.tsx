@@ -2,7 +2,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import NavBar from "@/components/NavBar";
 import { api } from "@/lib/api";
 
 type Course = {
@@ -13,134 +12,127 @@ type Course = {
 
 export default function StudentAttendancePage() {
   const [courses, setCourses] = useState<Course[]>([]);
-  const [selectedCourseId, setSelectedCourseId] = useState("");
-  const [code, setCode] = useState("");
-  const [msg, setMsg] = useState<string | null>(null);
+  const [courseId, setCourseId] = useState("");
+  const [qrCode, setQrCode] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loadingCourses, setLoadingCourses] = useState(false);
-
-  async function loadCourses() {
-    setLoadingCourses(true);
-    setMsg(null);
-    try {
-      const data = await api<Course[]>("/courses/enrolled", { method: "GET" });
-      setCourses(data);
-
-      // auto-select first course if available
-      if (data.length > 0) setSelectedCourseId(data[0]._id);
-    } catch (e: any) {
-      setMsg(e.message || "Failed to load courses");
-    } finally {
-      setLoadingCourses(false);
-    }
-  }
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
 
   useEffect(() => {
     loadCourses();
   }, []);
 
-  async function submit(e: React.FormEvent) {
+  async function loadCourses() {
+  setErr("");
+  try {
+    const data = await api<any[]>("/courses/enrolled");
+    setCourses(data);
+    if (data[0]) setCourseId(data[0]._id);
+  } catch {
+    setErr("Failed to load courses");
+  }
+}
+
+
+  async function submitAttendance(e: React.FormEvent) {
     e.preventDefault();
-    setMsg(null);
-
-    if (!selectedCourseId) {
-      setMsg("❌ Please select a course first.");
-      return;
-    }
-    if (!code.trim()) {
-      setMsg("❌ Please paste the QR code value.");
-      return;
-    }
-
+    setMsg("");
+    setErr("");
     setLoading(true);
+
     try {
       await api("/attendance/mark", {
         method: "POST",
-        body: JSON.stringify({ code, courseId: selectedCourseId }),
+        body: JSON.stringify({
+          courseId,
+          code: qrCode.trim(),
+        }),
       });
 
       setMsg("✅ Attendance marked successfully");
-      setCode("");
+      setQrCode("");
     } catch (e: any) {
-      setMsg(e.message || "Failed to mark attendance");
+      setErr(e?.message || "Failed to mark attendance");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <>
-      <NavBar />
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-green-900 via-emerald-800 to-green-700 px-4">
+     
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.35),transparent_65%)]" />
 
-      <div className="min-h-screen bg-gray-100 py-12">
-        <div className="max-w-md mx-auto px-6 space-y-6">
+      <div className="relative w-full max-w-md bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl p-6 space-y-5">
+        <div>
+          <h1 className="text-2xl font-bold text-green-900">
+            Mark Attendance
+          </h1>
+          <p className="text-sm text-gray-600">
+            Select your course and enter the QR code.
+          </p>
+        </div>
+
+        {(msg || err) && (
+          <div
+            className={`rounded-lg p-3 text-sm ${
+              err
+                ? "bg-red-50 text-red-700 border border-red-200"
+                : "bg-green-50 text-green-800 border border-green-200"
+            }`}
+          >
+            {err || msg}
+          </div>
+        )}
+
+        <form onSubmit={submitAttendance} className="space-y-4">
+         
           <div>
-            <h1 className="text-2xl font-bold text-blue-900">
-              Mark Attendance
-            </h1>
-            <p className="text-sm text-gray-600">
-              Select your course, then paste the QR code from your lecturer.
-            </p>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Course
+            </label>
+            <select
+              value={courseId}
+              onChange={(e) => setCourseId(e.target.value)}
+              className="w-full rounded-lg border-2 border-green-600 bg-white px-4 py-3
+             text-gray-800 font-medium
+             focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-700
+             hover:border-green-700
+             transition"
+            >
+              {courses.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.code} — {c.title}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {msg && (
-            <div className="border rounded-xl p-3 text-sm bg-blue-50 border-blue-200 text-blue-800">
-              {msg}
-            </div>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              QR Code
+            </label>
+            <input
+              value={qrCode}
+              onChange={(e) => setQrCode(e.target.value)}
+              placeholder="Paste code from lecturer"
+              className="w-full rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-green-600 text-gray-700"
+            />
+          </div>
 
-          <form
-            onSubmit={submit}
-            className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4"
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-lg bg-green-700 hover:bg-green-800 text-white py-3 font-medium transition disabled:opacity-60"
           >
-            <div>
-              <label className="block text-sm font-medium mb-1 text-black">
-                Course
-              </label>
+            {loading ? "Submitting..." : "Submit Attendance"}
+          </button>
+        </form>
 
-              {loadingCourses ? (
-                <p className="text-sm text-gray-600">Loading courses...</p>
-              ) : courses.length === 0 ? (
-                <p className="text-sm text-gray-600">
-                  You are not enrolled in any course yet. Ask admin to enroll
-                  you.
-                </p>
-              ) : (
-                <select
-                  value={selectedCourseId}
-                  onChange={(e) => setSelectedCourseId(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 bg-white text-gray-600"
-                >
-                  {courses.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.code} — {c.title}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1 text-black">
-                QR Code
-              </label>
-              <input
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="Paste code from QR"
-                className="w-full border rounded-lg px-3 py-2 text-gray-600"
-              />
-            </div>
-
-            <button
-              disabled={loading || loadingCourses || courses.length === 0}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg py-2 transition"
-            >
-              {loading ? "Submitting..." : "Submit Attendance"}
-            </button>
-          </form>
-        </div>
+        <p className="text-xs text-gray-500 text-center">
+          UNN Attendance System • Student Access
+        </p>
       </div>
-    </>
+    </div>
   );
 }

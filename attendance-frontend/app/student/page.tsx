@@ -1,65 +1,81 @@
 "use client";
 
 import Link from "next/link";
-import NavBar from "@/components/NavBar";
+import { useRouter } from "next/navigation";
+import { getUser } from "@/lib/auth";
 
-function Card({
-  title,
-  desc,
-  href,
-}: {
-  title: string;
-  desc: string;
-  href: string;
-}) {
+export default function StudentDashboardPage() {
+  const router = useRouter();
+  const user = getUser();
+
+  function logout() {
+    router.push("/logout");
+  }
+
   return (
-    <Link
-      href={href}
-      className="block bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition"
-    >
-      <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-      <p className="text-sm text-gray-600 mt-1">{desc}</p>
-    </Link>
-  );
-}
-
-export default function StudentPage() {
-  return (
-    <>
-      <NavBar />
-
-      <div className="min-h-screen bg-gray-100 py-10">
-        <div className="max-w-5xl mx-auto px-6 space-y-6">
+    <div className="min-h-screen bg-linear-to-br from-[#063528] via-[#0b5a43] to-[#0f8a64] flex items-center justify-center px-6 py-10">
+      <div className="w-full max-w-3xl bg-white/95 rounded-2xl shadow-xl border border-white/30 p-8">
+       
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-blue-900">
+            <h1 className="text-2xl font-bold text-[#0b5a43]">
               Student Dashboard
             </h1>
             <p className="text-sm text-gray-600">
-              View your courses and mark attendance.
+              Welcome back,{" "}
+              <span className="font-semibold text-gray-900">
+                {user?.name || "Student"}
+              </span>
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-6">
-            <Card
-              title="My Courses"
-              desc="View courses you are enrolled in"
-              href="/student/courses"
-            />
-            <Card
-              title="Mark Attendance"
-              desc="Submit QR code to mark attendance"
-              href="/student/attendance"
-            />
-            <Card
-            title="Attendance History"
-            desc="See all your attendance records"
-            href="/student/history"
-            />
-          </div>
+          <button
+            onClick={logout}
+            className="bg-[#0b5a43] hover:bg-[#0f8a64] text-white text-sm font-medium px-4 py-2 rounded-lg transition"
+          >
+            Logout
+          </button>
         </div>
+
+        <div className="mt-6 grid sm:grid-cols-2 gap-4">
+          <Link
+            href="/student/courses"
+            className="block bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition"
+          >
+            <h2 className="font-semibold text-gray-900">My Courses</h2>
+            <p className="text-sm text-gray-600 mt-2">
+              View courses you are enrolled in.
+            </p>
+          </Link>
+
+          <Link
+            href="/student/attendance"
+            className="block bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition"
+          >
+            <h2 className="font-semibold text-gray-900">Mark Attendance</h2>
+            <p className="text-sm text-gray-600 mt-2">
+              Submit the attendance code from your lecturer&apos;s QR.
+            </p>
+          </Link>
+
+          <Link
+            href="/student/history"
+            className="block bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition sm:col-span-2"
+          >
+            <h2 className="font-semibold text-gray-900">Attendance History</h2>
+            <p className="text-sm text-gray-600 mt-2">
+              See your attendance records across courses.
+            </p>
+          </Link>
+        </div>
+
+        <p className="mt-8 text-xs text-gray-400">
+          UNN Attendance System • Student Access
+        </p>
       </div>
-    </>
+    </div>
   );
 }
+
 
 

@@ -27,16 +27,13 @@ export default function AdminCoursesPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  // create course form
   const [code, setCode] = useState("");
   const [title, setTitle] = useState("");
   const [unit, setUnit] = useState<number>(2);
 
-  // assign lecturer (dropdowns)
   const [assignCourseId, setAssignCourseId] = useState("");
   const [lecturerId, setLecturerId] = useState("");
 
-  // enroll student (dropdowns + optional search)
   const [enrollCourseId, setEnrollCourseId] = useState("");
   const [studentId, setStudentId] = useState("");
   const [studentSearch, setStudentSearch] = useState("");
@@ -68,7 +65,6 @@ export default function AdminCoursesPage() {
       setLecturers(lecturerData);
       setStudents(studentData);
 
-      // set defaults if empty
       if (!assignCourseId && courseData[0]) setAssignCourseId(courseData[0]._id);
       if (!enrollCourseId && courseData[0]) setEnrollCourseId(courseData[0]._id);
       if (!lecturerId && lecturerData[0]) setLecturerId(lecturerData[0]._id);
@@ -148,12 +144,12 @@ export default function AdminCoursesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 py-10">
+    <div className="min-h-screen py-10 bg-linear-to-br from-[#0b3d2e] via-[#0f5f46] to-[#138a63]">
       <div className="max-w-5xl mx-auto px-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-blue-900">Admin • Courses</h1>
-            <p className="text-sm text-gray-600">
+            <h1 className="text-2xl font-bold text-white">Admin • Courses</h1>
+            <p className="text-sm text-gray-200">
               Create courses, assign lecturers, enroll students.
             </p>
           </div>
@@ -174,7 +170,6 @@ export default function AdminCoursesPage() {
           </div>
         )}
 
-        {/* Create Course */}
         <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4 shadow-sm">
           <h2 className="text-lg font-semibold text-black">Create Course</h2>
 
@@ -205,14 +200,13 @@ export default function AdminCoursesPage() {
             />
             <button
               onClick={createCourse}
-              className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-5 py-2 transition"
+              className="bg-[#0f5f46] hover:bg-[#138a63] text-white rounded-lg px-5 py-2 transition"
             >
               Create
             </button>
           </div>
         </div>
 
-        {/* Assign Lecturer */}
         <div className="bg-white border rounded-2xl p-5 space-y-4">
           <h2 className="text-lg font-semibold text-black">Assign Lecturer to Course</h2>
 
@@ -250,7 +244,7 @@ export default function AdminCoursesPage() {
 
           <button
             onClick={assignLecturer}
-            className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-5 py-2 transition"
+            className="bg-[#0f5f46] hover:bg-[#138a63] text-white rounded-lg px-5 py-2 transition"
           >
             Assign Lecturer
           </button>
@@ -262,7 +256,6 @@ export default function AdminCoursesPage() {
           )}
         </div>
 
-        {/* Enroll Student */}
         <div className="bg-white border rounded-2xl p-5 space-y-4">
           <h2 className="text-lg font-semibold text-black">Enroll Student</h2>
 
@@ -307,7 +300,7 @@ export default function AdminCoursesPage() {
 
           <button
             onClick={enrollStudent}
-            className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-5 py-2 transition"
+            className="bg-[#0f5f46] hover:bg-[#138a63] text-white rounded-lg px-5 py-2 transition"
           >
             Enroll Student
           </button>
@@ -319,13 +312,12 @@ export default function AdminCoursesPage() {
           )}
         </div>
 
-        {/* Course List */}
         <div className="bg-white border rounded-2xl p-5 space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-black">All Courses</h2>
             <button
               onClick={loadAll}
-              className="border rounded-xl px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white"
+              className="border rounded-xl px-3 py-2 text-sm bg-[#0f5f46] hover:bg-[#138a63] text-white"
               disabled={loading}
             >
               {loading ? "Refreshing..." : "Refresh"}
@@ -349,13 +341,6 @@ export default function AdminCoursesPage() {
             </div>
           )}
         </div>
-
-        {/* Helpful note */}
-        <p className="text-xs text-gray-500">
-          If the lecturer/student dropdowns are empty, confirm your backend has{" "}
-          <span className="font-mono">GET /api/users?role=lecturer</span> and{" "}
-          <span className="font-mono">GET /api/users?role=student</span> (admin only).
-        </p>
       </div>
     </div>
   );

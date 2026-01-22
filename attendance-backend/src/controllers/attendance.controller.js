@@ -163,19 +163,29 @@ export const sessionReport = asyncHandler(async (req, res) => {
 });
 
 export const getMyAttendance = async (req, res) => {
-  const records = await AttendanceRecord.find({
-    student: req.user._id,
-  })
+  const records = await AttendanceRecord.find({ student: req.user._id })
     .populate("course", "code title")
     .populate("session", "_id")
     .sort({ markedAt: -1 });
 
-  res.json(records);
+  const normalized = records.map((r) => {
+    const status = r.status
+    ? String(r.status).toLowerCase()
+    : r.present === true
+    ? "present"
+    : r.present === false
+    ? "absent"
+    : "unknown";
+
+    return {
+      _id: r._id,
+      course: r.course,
+      session: r.session,
+      markedAt: r.markedAt,
+      status,
+    };
+  });
+
+  res.json(normalized);
 };
-
-
-
-
-
-
 
