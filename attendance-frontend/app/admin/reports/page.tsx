@@ -65,6 +65,7 @@ export default function AdminReportsPage() {
     p.set("page", String(page));
     p.set("limit", String(limit));
     return p.toString();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, from, to, page]);
 
   async function load() {
