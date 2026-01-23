@@ -1,13 +1,10 @@
-export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
-export const revalidate = 0;
+"use client";
 
-import dynamicImport from "next/dynamic";
+import dynamic from "next/dynamic";
 import { Suspense } from "react";
 
-const ScanClient = dynamicImport(() => import("./ScanClient"), {
+const ScanClient = dynamic(() => import("./ScanClient"), {
   ssr: false,
-  loading: () => <div className="p-6">Loading...</div>,
 });
 
 export default function StudentScanPage() {
@@ -17,6 +14,8 @@ export default function StudentScanPage() {
     </Suspense>
   );
 }
+
+
 
 
 
