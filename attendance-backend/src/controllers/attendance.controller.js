@@ -11,6 +11,8 @@ function makeCode() {
   return crypto.randomBytes(16).toString("hex"); 
 }
 
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+
 export const createSession = asyncHandler(async (req, res) => {
   const { courseId } = req.params;
   const { durationMinutes = 10 } = req.body;
@@ -63,25 +65,84 @@ export const createSession = asyncHandler(async (req, res) => {
   });
 });
 
-export const qrPng = asyncHandler(async (req, res) => {
+export const qrPng = async (req, res) => {
   const { sessionId } = req.params;
 
-  const session = await AttendanceSession.findById(sessionId).populate("course");
-  if (!session) {
-    res.status(404);
-    throw new Error("Session not found");
-  }
+  const session = await AttendanceSession.findById(sessionId);
+  if (!session) return res.status(404).json({ message: "Session not found" });
+  if (session.status !== "open") return res.status(400).json({ message: "Session closed" });
 
-  if (String(session.lecturer) !== String(req.user._id)) {
-    res.status(403);
-    throw new Error("Unauthorized");
-  }
+  // short-lived token (e.g. 20 seconds)
+  const ttlSeconds = 20;
+  const jti = crypto.randomBytes(16).toString("hex");
+  const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
 
-  const qrText = JSON.stringify({ code: session.code, courseId: String(session.course._id) });
+  await QrToken.create({ jti, session: session._id, expiresAt });
+
+  const token = jwt.sign(
+    { jti, sessionId: String(session._id) },
+    process.env.JWT_SECRET,
+    { expiresIn: ttlSeconds }
+  );
+
+  // student scan link (phone camera opens this)
+  const url = `${FRONTEND_URL}/student/scan?token=${encodeURIComponent(token)}`;
 
   res.setHeader("Content-Type", "image/png");
-  await QRCode.toFileStream(res, qrText, { type: "png", margin: 1, scale: 8 });
-});
+  const pngBuffer = await QRCode.toBuffer(url, { width: 320, margin: 1 });
+  res.send(pngBuffer);
+};
+
+export const consumeQrTokenAndMark = async (req, res) => {
+  const { token } = req.body;
+
+  if (!token) return res.status(400).json({ message: "Token required" });
+
+  let payload;
+  try {
+    payload = jwt.verify(token, process.env.JWT_SECRET);
+  } catch {
+    return res.status(400).json({ message: "QR expired/invalid. Ask lecturer to refresh." });
+  }
+
+  const { jti, sessionId } = payload;
+
+  const qr = await QrToken.findOne({ jti });
+  if (!qr) return res.status(400).json({ message: "QR expired/invalid." });
+  if (qr.usedAt) return res.status(400).json({ message: "QR already used. Rescan." });
+  if (qr.expiresAt < new Date()) return res.status(400).json({ message: "QR expired. Rescan." });
+
+  const session = await AttendanceSession.findById(sessionId).populate("course");
+  if (!session) return res.status(404).json({ message: "Session not found" });
+  if (session.status !== "open") return res.status(400).json({ message: "Session closed" });
+
+  // mark token as used (single use)
+  qr.usedAt = new Date();
+  await qr.save();
+
+  // prevent duplicate mark per student per session
+  const already = await AttendanceRecord.findOne({
+    student: req.user._id,
+    session: session._id,
+  });
+
+  if (already) {
+    return res.json({ message: "Already marked", record: already });
+  }
+
+  const record = await AttendanceRecord.create({
+    student: req.user._id,
+    session: session._id,
+    course: session.course?._id,
+    status: "present",
+    markedAt: new Date(),
+  });
+
+  res.status(201).json({
+    message: "Attendance marked ✅",
+    record,
+  });
+};
 
 export const markAttendance = asyncHandler(async (req, res) => {
   const { code, courseId } = req.body;

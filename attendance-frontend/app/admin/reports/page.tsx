@@ -51,7 +51,7 @@ export default function AdminReportsPage() {
   const [to, setTo] = useState("");
 
   const [page, setPage] = useState(1);
-  const limit = 25;
+  const [limit] = useState(25);
 
   const [data, setData] = useState<ReportsResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -222,31 +222,35 @@ export default function AdminReportsPage() {
             </tbody>
           </table>
 
-          {data && data.pages > 1 && (
-            <div className="flex items-center justify-between p-3 bg-gray-50">
-              <button
-                className="border rounded-lg px-3 py-2 text-sm disabled:opacity-50"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                Prev
-              </button>
-              <span className="text-sm text-gray-700">
-                Page {data.page} of {data.pages}
-              </span>
-              <button
-                className="border rounded-lg px-3 py-2 text-sm disabled:opacity-50"
-                disabled={page >= data.pages}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </div>
+      {data && (
+  <div className="flex items-center justify-between p-3 border-t bg-gray-50">
+    <p className="text-xs text-gray-600">
+      Page {data.page} of {data.pages} · Total {data.total}
+    </p>
 
-        <p className="text-xs text-center text-gray-500">UNN Attendance System • Admin Access</p>
-      </div>
+    <div className="flex gap-2">
+      <button
+        disabled={page <= 1}
+        onClick={() => setPage((p) => Math.max(1, p - 1))}
+        className="px-3 py-1 rounded-md border bg-green-800 text-white text-sm "
+      >
+        Prev
+      </button>
+
+      <button
+        disabled={page >= data.pages}
+        onClick={() => setPage((p) => p + 1)}
+        className="px-3 py-1 rounded-md border bg-green-800 text-white text-sm"
+      >
+        Next
+      </button>
+    </div>
+  </div>
+)}
+ </div>
+
+    <p className="text-xs text-center text-gray-500">UNN Attendance System • Admin Access</p>
+    </div>
     </div>
   );
 }

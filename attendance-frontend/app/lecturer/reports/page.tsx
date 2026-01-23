@@ -10,8 +10,8 @@ type ReportRow = {
   _id: string;
   course?: { _id?: string; code?: string; title?: string };
   student?: { _id?: string; name?: string; email?: string };
-  status?: string; // "present" | "absent"
-  markedAt?: string; // ISO date
+  status?: string;
+  markedAt?: string;
 };
 
 type ReportsResponse = {
@@ -70,7 +70,9 @@ export default function LecturerReportsPage() {
     setLoading(true);
     setErr(null);
     try {
-      const res = await api<ReportsResponse>(`/lecturer/reports/attendance?${qs}`);
+      const res = await api<ReportsResponse>(
+        `/lecturer/reports/attendance?${qs}`
+      );
       setData(res);
     } catch (e: any) {
       setErr(e?.message || "Failed to load reports");
@@ -115,11 +117,17 @@ export default function LecturerReportsPage() {
   }
 
   function exportCsv() {
-    downloadFile(`/lecturer/reports/attendance/export.csv?${qs}`, "lecturer-attendance.csv");
+    downloadFile(
+      `/lecturer/reports/attendance/export.csv?${qs}`,
+      "lecturer-attendance.csv"
+    );
   }
 
   function exportPdf() {
-    downloadFile(`/lecturer/reports/attendance/export.pdf?${qs}`, "lecturer-attendance.pdf");
+    downloadFile(
+      `/lecturer/reports/attendance/export.pdf?${qs}`,
+      "lecturer-attendance.pdf"
+    );
   }
 
   return (
@@ -127,11 +135,14 @@ export default function LecturerReportsPage() {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.35),transparent_65%)]" />
 
       <div className="relative w-full max-w-6xl bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl p-6 space-y-6">
-        {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-green-900">Attendance Reports</h1>
-            <p className="text-sm text-gray-600">View and export attendance records.</p>
+            <h1 className="text-2xl font-bold text-green-900">
+              Attendance Reports
+            </h1>
+            <p className="text-sm text-gray-600">
+              View and export attendance records.
+            </p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -149,7 +160,10 @@ export default function LecturerReportsPage() {
               Export PDF
             </button>
 
-            <Link href="/lecturer" className="text-sm font-medium text-green-800 hover:underline">
+            <Link
+              href="/lecturer"
+              className="text-sm font-medium text-green-800 hover:underline"
+            >
               Back
             </Link>
           </div>
@@ -161,11 +175,12 @@ export default function LecturerReportsPage() {
           </div>
         ) : null}
 
-        {/* Filters */}
         <div className="rounded-xl border bg-white p-4">
           <div className="grid md:grid-cols-5 gap-3 items-end">
             <div>
-              <label className="text-xs font-semibold text-gray-700">From</label>
+              <label className="text-xs font-semibold text-gray-700">
+                From
+              </label>
               <input
                 type="date"
                 value={from}
@@ -173,7 +188,7 @@ export default function LecturerReportsPage() {
                   setPage(1);
                   setFrom(e.target.value);
                 }}
-                className="mt-1 w-full border rounded-lg p-2 text-sm"
+                className="mt-1 w-full border rounded-lg p-2 text-sm text-gray-700"
               />
             </div>
 
@@ -186,19 +201,21 @@ export default function LecturerReportsPage() {
                   setPage(1);
                   setTo(e.target.value);
                 }}
-                className="mt-1 w-full border rounded-lg p-2 text-sm"
+                className="mt-1 w-full border rounded-lg p-2 text-sm text-gray-700"
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-gray-700">Status</label>
+              <label className="text-xs font-semibold text-gray-700">
+                Status
+              </label>
               <select
                 value={status}
                 onChange={(e) => {
                   setPage(1);
                   setStatus(e.target.value as any);
                 }}
-                className="mt-1 w-full border rounded-lg p-2 text-sm"
+                className="mt-1 w-full border rounded-lg p-2 text-sm text-gray-700"
               >
                 <option value="">All</option>
                 <option value="present">Present</option>
@@ -246,11 +263,13 @@ export default function LecturerReportsPage() {
                           <div className="font-medium text-gray-900">
                             {r.course?.code || "—"}
                           </div>
-                          <div className="text-xs text-gray-500">{r.course?.title || ""}</div>
+                          <div className="text-xs text-gray-500">
+                            {r.course?.title || ""}
+                          </div>
                         </td>
 
-                        <td className="p-3">{r.student?.name || "—"}</td>
-                        <td className="p-3">{r.student?.email || "—"}</td>
+                        <td className="p-3 text-black">{r.student?.name || "—"}</td>
+                        <td className="p-3 text-black">{r.student?.email || "—"}</td>
 
                         <td className="p-3">
                           <span
@@ -264,8 +283,10 @@ export default function LecturerReportsPage() {
                           </span>
                         </td>
 
-                        <td className="p-3 text-gray-700">
-                          {r.markedAt ? new Date(r.markedAt).toLocaleString() : "—"}
+                        <td className="p-3 text-black">
+                          {r.markedAt
+                            ? new Date(r.markedAt).toLocaleString()
+                            : "—"}
                         </td>
                       </tr>
                     );
@@ -285,14 +306,14 @@ export default function LecturerReportsPage() {
               <button
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="px-3 py-1 rounded-md border bg-white text-sm disabled:opacity-50"
+                className="px-3 py-1 rounded-md border bg-green-800 text-white text-sm"
               >
                 Prev
               </button>
               <button
                 disabled={page >= data.pages}
                 onClick={() => setPage((p) => p + 1)}
-                className="px-3 py-1 rounded-md border bg-white text-sm disabled:opacity-50"
+                className="px-3 py-1 rounded-md border bg-green-800 text-white text-sm"
               >
                 Next
               </button>
@@ -300,9 +321,10 @@ export default function LecturerReportsPage() {
           </div>
         </div>
 
-        <p className="text-xs text-center text-gray-500">UNN Attendance System • Lecturer Access</p>
+        <p className="text-xs text-center text-gray-500">
+          UNN Attendance System • Lecturer Access
+        </p>
       </div>
     </div>
   );
 }
-
