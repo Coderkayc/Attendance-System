@@ -10,6 +10,7 @@ import { api } from "@/lib/api";
 export default function RegisterPage() {
   const router = useRouter();
 
+  const [matric, setMatric] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"student" | "lecturer" | "admin">("student");
@@ -26,10 +27,11 @@ export default function RegisterPage() {
       await api("/auth/register", {
         method: "POST",
         body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim().toLowerCase(),
-          password: password.trim(),
-          role,
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        password: password.trim(),
+        role,
+        matric: role === "student" ? matric.trim() : undefined,
         }),
       });
 
@@ -89,6 +91,18 @@ export default function RegisterPage() {
           </select>
         </div>
 
+        {role === "student" && (
+  <div>
+    <label className="text-sm font-medium text-gray-700">Matric number</label>
+    <input
+      className="mt-1 w-full rounded-lg border border-green-900 bg-white p-3 text-gray-900 outline-none focus:ring-2 focus:ring-green-800"
+      placeholder="2021/123456"
+      value={matric}
+      onChange={(e) => setMatric(e.target.value)}
+      required
+    />
+  </div>
+)}
         <div>
           <label className="text-sm font-medium text-gray-700">Password</label>
           <input

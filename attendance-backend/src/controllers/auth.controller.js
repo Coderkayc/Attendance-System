@@ -10,7 +10,9 @@ export const register = asyncHandler(async (req, res) => {
     throw new Error("name, email, password, role are required");
   }
 
-  const exists = await User.findOne({ email: email.toLowerCase() });
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const exists = await User.findOne({ email: normalizedEmail });
   if (exists) {
     res.status(400);
     throw new Error("Email already in use");
@@ -27,19 +29,18 @@ export const register = asyncHandler(async (req, res) => {
   }
 
   const user = await User.create({
-    name,
-    email,
+    name: name.trim(),
+    email: normalizedEmail,
     password,
     role,
-    matric: role === "student" ? matric : undefined,
-    staffId: role === "lecturer" ? staffId : undefined,
+    matric: role === "student" ? matric.trim() : undefined,
   });
 
   const token = signToken({ id: user._id });
 
   res.status(201).json({
     token,
-    user: { id: user._id, name: user.name, email: user.email, role: user.role }
+    user: { id: user._id, name: user.name, email: user.email, role: user.role },
   });
 });
 
