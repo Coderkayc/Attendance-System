@@ -78,19 +78,6 @@ export default function RegisterPage() {
           />
         </div>
 
-        <div>
-          <label className="text-sm font-medium text-gray-700">Role</label>
-          <select
-            className="mt-1 w-full rounded-lg border border-green-900 bg-white p-3 text-gray-900 outline-none focus:ring-2 focus:ring-green-800"
-            value={role}
-            onChange={(e) => setRole(e.target.value as any)}
-          >
-            <option value="student">Student</option>
-            <option value="lecturer">Lecturer</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-
         {role === "student" && (
   <div>
     <label className="text-sm font-medium text-gray-700">Matric number</label>

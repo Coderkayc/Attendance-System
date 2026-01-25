@@ -3,11 +3,16 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { signToken } from "../utils/token.js";
 
 export const register = asyncHandler(async (req, res) => {
-  const { name, email, password, role, matric, staffId } = req.body;
+  const { name, email, password, matric } = req.body;
 
-  if (!name || !email || !password || !role) {
+  if (!name || !email || !password) {
     res.status(400);
-    throw new Error("name, email, password, role are required");
+    throw new Error("name, email, password are required");
+  }
+
+  if (!matric) {
+    res.status(400);
+    throw new Error("matric is required for student");
   }
 
   const normalizedEmail = email.trim().toLowerCase();
@@ -18,22 +23,12 @@ export const register = asyncHandler(async (req, res) => {
     throw new Error("Email already in use");
   }
 
-  if (role === "student" && !matric) {
-    res.status(400);
-    throw new Error("matric is required for student");
-  }
-
-  if (role === "lecturer" && !staffId) {
-    res.status(400);
-    throw new Error("staffId is required for lecturer");
-  }
-
   const user = await User.create({
     name: name.trim(),
     email: normalizedEmail,
     password,
-    role,
-    matric: role === "student" ? matric.trim() : undefined,
+    role: "student",     
+    matric: matric.trim(),
   });
 
   const token = signToken({ id: user._id });
@@ -73,7 +68,7 @@ export const login = asyncHandler(async (req, res) => {
 
   res.json({
     token,
-    user: { id: user._id, name: user.name, email: user.email, role: user.role }
+    user: { id: user._id, name: user.name, email: user.email, role: user.role },
   });
 });
 
