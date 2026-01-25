@@ -13,7 +13,7 @@ export default function RegisterPage() {
   const [matric, setMatric] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"student" | "lecturer" | "admin">("student");
+  const [role] = useState<"student" | "lecturer" | "admin">("student");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
