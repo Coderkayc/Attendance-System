@@ -4,38 +4,37 @@ import { signToken } from "../utils/token.js";
 
 export const register = asyncHandler(async (req, res) => {
   const { name, email, password, matric } = req.body;
+  const role = "student";
 
-  if (!name || !email || !password) {
+  if (!name || !email || !password || !matric) {
     res.status(400);
-    throw new Error("name, email, password are required");
+    throw new Error("name, email, password and matric are required");
   }
 
-  if (!matric) {
-    res.status(400);
-    throw new Error("matric is required for student");
-  }
-
-  const normalizedEmail = email.trim().toLowerCase();
-
-  const exists = await User.findOne({ email: normalizedEmail });
+  const exists = await User.findOne({ email: email.toLowerCase() });
   if (exists) {
     res.status(400);
     throw new Error("Email already in use");
   }
 
   const user = await User.create({
-    name: name.trim(),
-    email: normalizedEmail,
+    name,
+    email: email.toLowerCase(),
     password,
-    role: "student",     
-    matric: matric.trim(),
+    role,
+    matric,
   });
 
   const token = signToken({ id: user._id });
 
   res.status(201).json({
     token,
-    user: { id: user._id, name: user.name, email: user.email, role: user.role },
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
   });
 });
 
