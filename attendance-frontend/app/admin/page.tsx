@@ -38,7 +38,7 @@ export default function AdminDashboard() {
           </button>
         </div>
 
-       <div className="grid md:grid-cols-2 gap-6">
+  <div className="grid md:grid-cols-3 gap-6">
   <Link
     href="/admin/courses"
     className="group border rounded-xl p-6 hover:shadow-lg transition bg-white"
@@ -46,6 +46,16 @@ export default function AdminDashboard() {
     <h3 className="font-semibold text-gray-900">Manage Courses</h3>
     <p className="text-sm text-gray-600 mt-1">
       Create courses, assign lecturers, and enroll students.
+    </p>
+  </Link>
+
+  <Link
+    href="/admin/users"
+    className="group border rounded-xl p-6 hover:shadow-lg transition bg-white"
+  >
+    <h3 className="font-semibold text-gray-900">Manage Users</h3>
+    <p className="text-sm text-gray-600 mt-1">
+      Create lecturers and students (admin-only).
     </p>
   </Link>
 
@@ -59,8 +69,8 @@ export default function AdminDashboard() {
     </p>
   </Link>
 </div>
-      
-        <p className="text-xs text-gray-400 mt-8">
+
+      <p className="text-xs text-gray-400 mt-8">
           UNN Attendance System • Admin Access
         </p>
       </div>

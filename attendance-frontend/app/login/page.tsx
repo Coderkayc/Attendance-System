@@ -66,7 +66,7 @@ export default function LoginPage() {
           <label className="text-sm font-medium text-gray-700">Email</label>
           <input
             className="mt-1 w-full rounded-lg border border-green-900 bg-white p-3 text-gray-900 outline-none focus:ring-2 focus:ring-green-800"
-            placeholder="you@uni.com"
+            placeholder="Enter your email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
@@ -77,7 +77,7 @@ export default function LoginPage() {
           <input
             type="password"
             className="mt-1 w-full rounded-lg border border-green-900 bg-white p-3 text-gray-900 outline-none focus:ring-2 focus:ring-green-800"
-            placeholder="••••••••"
+            placeholder="Enter your password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />

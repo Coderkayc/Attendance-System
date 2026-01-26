@@ -62,7 +62,7 @@ export default function RegisterPage() {
           <label className="text-sm font-medium text-gray-700">Full name</label>
           <input
             className="mt-1 w-full rounded-lg border border-green-900 bg-white p-3 text-gray-900 outline-none focus:ring-2 focus:ring-green-800"
-            placeholder="Mary John"
+            placeholder="Enter your full name"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
@@ -72,7 +72,7 @@ export default function RegisterPage() {
           <label className="text-sm font-medium text-gray-700">Email</label>
           <input
             className="mt-1 w-full rounded-lg border border-green-900 bg-white p-3 text-gray-900 outline-none focus:ring-2 focus:ring-green-800"
-            placeholder="you@uni.com"
+            placeholder="Enter your email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
@@ -83,7 +83,7 @@ export default function RegisterPage() {
     <label className="text-sm font-medium text-gray-700">Matric number</label>
     <input
       className="mt-1 w-full rounded-lg border border-green-900 bg-white p-3 text-gray-900 outline-none focus:ring-2 focus:ring-green-800"
-      placeholder="2021/123456"
+      placeholder="Enter your matric number"
       value={matric}
       onChange={(e) => setMatric(e.target.value)}
       required
@@ -95,7 +95,7 @@ export default function RegisterPage() {
           <input
             type="password"
             className="mt-1 w-full rounded-lg border border-green-900 bg-white p-3 text-gray-900 outline-none focus:ring-2 focus:ring-green-800"
-            placeholder="••••••••"
+            placeholder="Create a password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
