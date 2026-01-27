@@ -70,26 +70,19 @@ export const qrPng = async (req, res) => {
 
   const session = await AttendanceSession.findById(sessionId);
   if (!session) return res.status(404).json({ message: "Session not found" });
-  if (session.status !== "open") return res.status(400).json({ message: "Session closed" });
 
-  // short-lived token (e.g. 20 seconds)
-  const ttlSeconds = 20;
-  const jti = crypto.randomBytes(16).toString("hex");
-  const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
+  if (session.status === "closed") {
+    return res.status(400).json({ message: "Session already closed" });
+  }
 
-  await QrToken.create({ jti, session: session._id, expiresAt });
+  const base = process.env.FRONTEND_URL;
+  if (!base) return res.status(500).json({ message: "FRONTEND_URL not set" });
+  
+  const scanUrl = `${base}/student/scan?token=${session.qrToken}`;
 
-  const token = jwt.sign(
-    { jti, sessionId: String(session._id) },
-    process.env.JWT_SECRET,
-    { expiresIn: ttlSeconds }
-  );
-
-  // student scan link (phone camera opens this)
-  const url = `${FRONTEND_URL}/student/scan?token=${encodeURIComponent(token)}`;
+  const pngBuffer = await QRCode.toBuffer(scanUrl, { type: "png", width: 320 });
 
   res.setHeader("Content-Type", "image/png");
-  const pngBuffer = await QRCode.toBuffer(url, { width: 320, margin: 1 });
   res.send(pngBuffer);
 };
 
@@ -116,11 +109,9 @@ export const consumeQrTokenAndMark = async (req, res) => {
   if (!session) return res.status(404).json({ message: "Session not found" });
   if (session.status !== "open") return res.status(400).json({ message: "Session closed" });
 
-  // mark token as used (single use)
   qr.usedAt = new Date();
   await qr.save();
 
-  // prevent duplicate mark per student per session
   const already = await AttendanceRecord.findOne({
     student: req.user._id,
     session: session._id,
