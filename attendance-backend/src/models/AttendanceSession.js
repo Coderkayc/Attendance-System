@@ -5,10 +5,12 @@ const attendanceSessionSchema = new mongoose.Schema(
     course: { type: mongoose.Schema.Types.ObjectId, ref: "Course", required: true },
     lecturer: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 
-    tokenHash: { type: String, required: true, index: true, unique: true },
+    status: { type: String, enum: ["active", "closed"], default: "active" },
+
+    tokenHash: { type: String, required: true },
     expiresAt: { type: Date, required: true },
 
-    usedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], 
+    endedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
@@ -16,4 +18,5 @@ const attendanceSessionSchema = new mongoose.Schema(
 attendanceSessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export default mongoose.model("AttendanceSession", attendanceSessionSchema);
+
 

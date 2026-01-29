@@ -52,50 +52,37 @@ export default function LecturerSessionsPage() {
     }
   }
 
-  async function createSession() {
-    if (!courseId) return;
+ async function createSession() {
+  if (!courseId) return;
 
-    setLoading(true);
-    setErr(null);
-    setMsg(null);
+  setLoading(true);
+  setErr(null);
+  setMsg(null);
 
-    try {
-      const data = await api<any>(`/attendance/course/${courseId}/sessions`, {
-        method: "POST",
-        body: JSON.stringify({ durationMinutes: durationMins }),
-      });
-
-    const newSessionId =
-      data?.session?.id || data?.session?._id || data?.sessionId || data?.id;
-
-    const newStatus = (data?.session?.status || data?.status || "open") as "open" | "closed";
-
-    const newQr = data?.qr?.dataUrl || "";
-    const newCode = data?.qr?.text || data?.qr?.code || data?.session?.code || "";
-    
-    let attendanceCode = "";
-
-if (newCode) {
   try {
-    const parsed = JSON.parse(newCode);
-    attendanceCode = parsed.code;
-  } catch {
-    attendanceCode = newCode;
+    const data = await api<{ sessionId: string; token: string }>(
+      `/attendance/course/${courseId}/sessions`,
+      {
+        method: "POST",
+        body: JSON.stringify({ ttlMinutes: durationMins }),
+      }
+    );
+
+    setSessionId(data.sessionId);
+    setStatus("open");
+
+    setSessionCode(data.token);
+
+    const base = process.env.NEXT_PUBLIC_API_URL;
+    setQrDataUrl(`${base}/attendance/sessions/${data.sessionId}/qr.png`);
+
+    setMsg("Attendance session created. Display QR code to students.");
+  } catch (e: any) {
+    setErr(e?.message || "Failed to create session");
+  } finally {
+    setLoading(false);
   }
 }
-
-    setSessionId(String(newSessionId));
-    setStatus(newStatus);
-    setQrDataUrl(String(newQr));
-    setSessionCode(attendanceCode); 
-
-      setMsg("Attendance session created. Display QR code to students.");
-    } catch (e: any) {
-      setErr(e?.message || "Failed to create session");
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function endSession() {
     if (!sessionId) return;
@@ -259,4 +246,5 @@ if (newCode) {
       </div>
     </div>
   );
-}
+  }
+

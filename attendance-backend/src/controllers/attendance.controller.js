@@ -13,77 +13,68 @@ function makeCode() {
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
+
 export const createSession = asyncHandler(async (req, res) => {
   const { courseId } = req.params;
-  const { durationMinutes = 10 } = req.body;
+  const { ttlMinutes = 10 } = req.body;
 
   const course = await Course.findById(courseId);
-  if (!course) {
-    res.status(404);
-    throw new Error("Course not found");
+  if (!course) return res.status(404).json({ message: "Course not found" });
+
+  if (String(course.lecturer) !== String(req.user._id)) {
+    return res.status(403).json({ message: "Not your course" });
   }
 
-  if (!course.lecturer || String(course.lecturer) !== String(req.user._id)) {
-    res.status(403);
-    throw new Error("You are not assigned to this course");
-  }
-
-  const startsAt = new Date();
-  const endsAt = new Date(startsAt.getTime() + Number(durationMinutes) * 60 * 1000);
-
-  const code = makeCode();
+  const token = crypto.randomBytes(32).toString("hex");
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  const expiresAt = new Date(Date.now() + Number(ttlMinutes) * 60 * 1000);
 
   const session = await AttendanceSession.create({
     course: course._id,
     lecturer: req.user._id,
-    code,
-    startsAt,
-    endsAt,
-    status: "open"
+    tokenHash,
+    expiresAt,
+    status: "open",
   });
 
-  const payload = {
-    code: session.code,
-    courseId: String(course._id)
-  };
-
-  const qrText = JSON.stringify(payload);
-  const qrDataUrl = await QRCode.toDataURL(qrText);
-
-  res.status(201).json({
-    session: {
-      id: session._id,
-      course: session.course,
-      startsAt: session.startsAt,
-      endsAt: session.endsAt,
-      status: session.status
-    },
-    qr: {
-      text: qrText,
-      dataUrl: qrDataUrl
-    }
+  return res.status(201).json({
+    sessionId: session._id,
+    token,
+    expiresAt: session.expiresAt,
   });
 });
 
 export const qrPng = async (req, res) => {
   const { sessionId } = req.params;
+  const token = String(req.query.token || "");
+
+  if (!token) return res.status(400).json({ message: "Missing token" });
 
   const session = await AttendanceSession.findById(sessionId);
   if (!session) return res.status(404).json({ message: "Session not found" });
 
-  if (session.status === "closed") {
-    return res.status(400).json({ message: "Session already closed" });
+  if (session.status !== "active") {
+    return res.status(400).json({ message: "Session is not active" });
   }
 
-  const base = process.env.FRONTEND_URL;
-  if (!base) return res.status(500).json({ message: "FRONTEND_URL not set" });
-  
-  const scanUrl = `${base}/student/scan?token=${session.qrToken}`;
+  if (new Date() > new Date(session.expiresAt)) {
+    return res.status(400).json({ message: "Session expired" });
+  }
 
-  const pngBuffer = await QRCode.toBuffer(scanUrl, { type: "png", width: 320 });
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  if (tokenHash !== session.tokenHash) {
+    return res.status(401).json({ message: "Invalid token" });
+  }
+
+  const frontend = process.env.FRONTEND_URL;
+  if (!frontend) return res.status(500).json({ message: "FRONTEND_URL not set" });
+
+  const scanUrl = `${frontend}/student/scan?token=${token}`;
+
+  const png = await QRCode.toBuffer(scanUrl, { type: "png", width: 320 });
 
   res.setHeader("Content-Type", "image/png");
-  res.send(pngBuffer);
+  res.send(png);
 };
 
 export const consumeQrTokenAndMark = async (req, res) => {
