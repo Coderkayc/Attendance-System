@@ -4,17 +4,24 @@ export function notFound(req, res, next) {
 }
 
 export function errorHandler(err, req, res, next) {
-  const statusCode = res.statusCode && res.statusCode !== 200 ? res.statusCode : 500;
+  let statusCode = res.statusCode && res.statusCode !== 200 ? res.statusCode : 500;
 
-  if (err.code === 11000) {
-    return res.status(400).json({
-      message: "Duplicate key error",
-      field: Object.keys(err.keyValue || {})[0],
+  if (err?.code === 11000) {
+    statusCode = 400;
+
+    const fields = err?.keyValue ? Object.keys(err.keyValue).join(", ") : "field";
+    const values = err?.keyValue ? JSON.stringify(err.keyValue) : "";
+
+    return res.status(statusCode).json({
+      message: `Duplicate key error on ${fields}`,
+      keyValue: err.keyValue,        
+      keyPattern: err.keyPattern,   
     });
   }
 
-  res.status(statusCode).json({
-    message: err.message || "Server error",
-    stack: process.env.NODE_ENV === "production" ? undefined : err.stack,
+  return res.status(statusCode).json({
+    message: err.message || "Server Error",
+ 
   });
 }
+

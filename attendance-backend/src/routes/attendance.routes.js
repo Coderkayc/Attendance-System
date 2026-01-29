@@ -12,10 +12,12 @@ import {
 
 const router = Router();
 
+router.get("/sessions/:sessionId/qr.png", qrPng);
+
 router.use(protect);
 
 router.post("/course/:courseId/sessions", authorize("lecturer"), createSession);
-router.get("/sessions/:sessionId/qr.png", authorize("lecturer"), qrPng);
+
 router.patch("/sessions/:sessionId/end", authorize("lecturer"), endSession);
 
 router.post("/qr/consume", authorize("student"), consumeQrTokenAndMark);
