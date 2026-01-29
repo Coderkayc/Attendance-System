@@ -34,7 +34,7 @@ export const createSession = asyncHandler(async (req, res) => {
     lecturer: req.user._id,
     tokenHash,
     expiresAt,
-    status: "open",
+    status: "active",
   });
 
   return res.status(201).json({

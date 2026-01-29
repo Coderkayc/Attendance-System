@@ -20,7 +20,7 @@ export default function LecturerSessionsPage() {
 
   const [sessionId, setSessionId] = useState("");
   const [sessionCode, setSessionCode] = useState("");
-  const [status, setStatus] = useState<"open" | "closed">("open");
+  const [status, setStatus] = useState<"active" | "closed">("active");
 
   const [qrDataUrl, setQrDataUrl] = useState("");
 
@@ -69,7 +69,7 @@ export default function LecturerSessionsPage() {
     );
 
     setSessionId(data.sessionId);
-    setStatus("open");
+    setStatus("active");
 
     setSessionCode(data.token);
 
