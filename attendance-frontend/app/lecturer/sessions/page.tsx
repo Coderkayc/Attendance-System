@@ -60,21 +60,24 @@ export default function LecturerSessionsPage() {
   setMsg(null);
 
   try {
-    const data = await api<{ sessionId: string; token: string }>(
-      `/attendance/course/${courseId}/sessions`,
-      {
-        method: "POST",
-        body: JSON.stringify({ ttlMinutes: durationMins }),
-      }
-    );
+    const res = await api<{
+      sessionId: string;
+      token: string;
+      expiresAt: string;
+    }>(`/attendance/course/${courseId}/sessions`, {
+      method: "POST",
+      body: JSON.stringify({ ttlMinutes: durationMins }),
+    });
 
-    setSessionId(data.sessionId);
+    const { sessionId, token } = res;
+
+    const apiBase = process.env.NEXT_PUBLIC_API_URL!;
+    const qrUrl = `${apiBase}/attendance/sessions/${sessionId}/qr.png?token=${token}`;
+
+    setSessionId(sessionId);
+    setSessionCode(token);      
+    setQrDataUrl(qrUrl);        
     setStatus("active");
-
-    setSessionCode(data.token);
-
-    const base = process.env.NEXT_PUBLIC_API_URL;
-    setQrDataUrl(`${base}/attendance/sessions/${data.sessionId}/qr.png`);
 
     setMsg("Attendance session created. Display QR code to students.");
   } catch (e: any) {
