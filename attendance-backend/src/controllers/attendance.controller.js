@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import QRCode from "qrcode";
 import mongoose from "mongoose";
+import { getClientIp, ipInCidrs } from "../utils/ip.js";
 
 import Course from "../models/Course.js";
 import AttendanceSession from "../models/AttendanceSession.js";
@@ -13,10 +14,9 @@ function makeCode() {
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
-
 export const createSession = asyncHandler(async (req, res) => {
   const { courseId } = req.params;
-  const { ttlMinutes = 10 } = req.body;
+  const { ttlMinutes = 10, ipLock = true, allowedCidrs = [] } = req.body;
 
   const course = await Course.findById(courseId);
   if (!course) return res.status(404).json({ message: "Course not found" });
@@ -29,18 +29,25 @@ export const createSession = asyncHandler(async (req, res) => {
   const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
   const expiresAt = new Date(Date.now() + Number(ttlMinutes) * 60 * 1000);
 
+  const lecturerIp = getClientIp(req);
+  const computedCidrs = allowedCidrs.length > 0 ? allowedCidrs : lecturerIp ? [`${lecturerIp}/32`] : [];
+
   const session = await AttendanceSession.create({
     course: course._id,
     lecturer: req.user._id,
     tokenHash,
     expiresAt,
     status: "active",
+    ipRestrictionEnabled: Boolean(ipLock),
+    allowedCidrs: Boolean(ipLock) ? computedCidrs : [],
   });
 
   return res.status(201).json({
     sessionId: session._id,
     token,
     expiresAt: session.expiresAt,
+    ipRestrictionEnabled: session.ipRestrictionEnabled,
+    allowedCidrs: session.allowedCidrs,
   });
 });
 
@@ -96,6 +103,18 @@ export const consumeQrTokenAndMark = async (req, res) => {
     if (new Date() > new Date(session.expiresAt)) {
       return res.status(400).json({ message: "Session expired" });
     }
+
+     if (session.ipRestrictionEnabled && session.allowedCidrs?.length) {
+    const ip = getClientIp(req);
+    const ok = ipInCidrs(ip, session.allowedCidrs);
+
+    if (!ok) {
+      return res.status(403).json({
+        message: "You must be on the class network to mark attendance.",
+        ipDetected: ip,
+      });
+    }
+  }
 
     const course = await Course.findById(session.course);
     if (!course) return res.status(404).json({ message: "Course not found" });

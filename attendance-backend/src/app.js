@@ -19,6 +19,8 @@ app.use(morgan("dev"));
 
 app.get("/", (req, res) => res.json({ message: "Attendance API running " }));
 
+app.set("trust proxy", 1);
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);

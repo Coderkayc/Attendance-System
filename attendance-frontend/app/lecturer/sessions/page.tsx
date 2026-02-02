@@ -66,7 +66,7 @@ export default function LecturerSessionsPage() {
       expiresAt: string;
     }>(`/attendance/course/${courseId}/sessions`, {
       method: "POST",
-      body: JSON.stringify({ ttlMinutes: durationMins }),
+      body: JSON.stringify({ ttlMinutes: durationMins, ipLock: true }),
     });
 
     const { sessionId, token } = res;
@@ -80,7 +80,7 @@ export default function LecturerSessionsPage() {
     setQrDataUrl(qrUrl);        
     setStatus("active");
 
-    setMsg("Attendance session created. Display QR code to students.");
+    setMsg("Attendance session created.");
   } catch (e: any) {
     setErr(e?.message || "Failed to create session");
   } finally {
