@@ -70,9 +70,10 @@ export default function LecturerSessionsPage() {
     });
 
     const { sessionId, token } = res;
-
     const apiBase = process.env.NEXT_PUBLIC_API_URL!;
-    const qrUrl = `${apiBase}/attendance/sessions/${sessionId}/qr.png?token=${token}`;
+    const qrUrl = `${apiBase}/attendance/sessions/${res.sessionId}/qr.png?token=${encodeURIComponent(
+      res.token
+    )}`;
 
     setSessionId(sessionId);
     setSessionCode(token);      

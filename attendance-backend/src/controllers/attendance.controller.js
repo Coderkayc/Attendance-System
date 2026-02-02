@@ -78,53 +78,50 @@ export const qrPng = async (req, res) => {
 };
 
 export const consumeQrTokenAndMark = async (req, res) => {
-  const { token } = req.body;
-
-  if (!token) return res.status(400).json({ message: "Token required" });
-
-  let payload;
   try {
-    payload = jwt.verify(token, process.env.JWT_SECRET);
-  } catch {
-    return res.status(400).json({ message: "QR expired/invalid. Ask lecturer to refresh." });
+    const { token } = req.body;
+
+    if (!token) return res.status(400).json({ message: "Missing token" });
+
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+    const session = await AttendanceSession.findOne({ tokenHash });
+
+    if (!session) return res.status(404).json({ message: "Invalid/expired session" });
+
+    if (session.status !== "active") {
+      return res.status(400).json({ message: "Session closed" });
+    }
+
+    if (new Date() > new Date(session.expiresAt)) {
+      return res.status(400).json({ message: "Session expired" });
+    }
+
+    const course = await Course.findById(session.course);
+    if (!course) return res.status(404).json({ message: "Course not found" });
+
+    const exists = await Attendance.findOne({
+      session: session._id,
+      student: req.user._id,
+    });
+
+    if (exists) {
+      return res.status(200).json({ message: "Already marked ✅" });
+    }
+
+    await Attendance.create({
+      session: session._id,
+      course: session.course,
+      student: req.user._id,
+      lecturer: session.lecturer,
+      markedAt: new Date(),
+    });
+
+    return res.status(201).json({ message: "Attendance marked ✅" });
+  } catch (err) {
+    return res.status(500).json({ message: err.message || "Server error" });
   }
-
-  const { jti, sessionId } = payload;
-
-  const qr = await QrToken.findOne({ jti });
-  if (!qr) return res.status(400).json({ message: "QR expired/invalid." });
-  if (qr.usedAt) return res.status(400).json({ message: "QR already used. Rescan." });
-  if (qr.expiresAt < new Date()) return res.status(400).json({ message: "QR expired. Rescan." });
-
-  const session = await AttendanceSession.findById(sessionId).populate("course");
-  if (!session) return res.status(404).json({ message: "Session not found" });
-  if (session.status !== "open") return res.status(400).json({ message: "Session closed" });
-
-  qr.usedAt = new Date();
-  await qr.save();
-
-  const already = await AttendanceRecord.findOne({
-    student: req.user._id,
-    session: session._id,
-  });
-
-  if (already) {
-    return res.json({ message: "Already marked", record: already });
-  }
-
-  const record = await AttendanceRecord.create({
-    student: req.user._id,
-    session: session._id,
-    course: session.course?._id,
-    status: "present",
-    markedAt: new Date(),
-  });
-
-  res.status(201).json({
-    message: "Attendance marked ✅",
-    record,
-  });
-};
+}
 
 export const markAttendance = asyncHandler(async (req, res) => {
   const { code, courseId } = req.body;
@@ -163,15 +160,17 @@ export const endSession = async (req, res) => {
   const { sessionId } = req.params;
 
   const session = await AttendanceSession.findById(sessionId);
-  if (!session) {
-    return res.status(404).json({ message: "Session not found" });
+  if (!session) return res.status(404).json({ message: "Session not found" });
+
+  if (String(session.lecturer) !== String(req.user._id)) {
+    return res.status(403).json({ message: "Not your session" });
   }
 
   session.status = "closed";
-  session.endsAt = new Date();
+  session.endedAt = new Date();
   await session.save();
 
-  res.json({ message: "Session ended successfully" });
+  return res.json({ message: "Session ended", sessionId: session._id });
 };
 
 export const sessionReport = asyncHandler(async (req, res) => {
