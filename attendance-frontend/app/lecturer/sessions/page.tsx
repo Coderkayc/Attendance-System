@@ -66,7 +66,7 @@ export default function LecturerSessionsPage() {
       expiresAt: string;
     }>(`/attendance/course/${courseId}/sessions`, {
       method: "POST",
-      body: JSON.stringify({ ttlMinutes: durationMins, ipLock: true }),
+      body: JSON.stringify({ ttlMinutes: durationMins, }),
     });
 
     const { sessionId, token } = res;
