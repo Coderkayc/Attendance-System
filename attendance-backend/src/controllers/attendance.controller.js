@@ -85,7 +85,11 @@ export const qrPng = async (req, res) => {
 };
 
 export const consumeQrTokenAndMark = async (req, res) => {
-  try {
+  
+const ip = getClientIp(req);
+console.log("📍 Client IP detected:", ip);
+ 
+try {
     const { token } = req.body;
 
     if (!token) return res.status(400).json({ message: "Missing token" });
