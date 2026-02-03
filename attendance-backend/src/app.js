@@ -21,6 +21,16 @@ app.get("/", (req, res) => res.json({ message: "Attendance API running " }));
 
 app.set("trust proxy", 1);
 
+app.use((req, res, next) => {
+  const ip =
+    (req.headers["x-forwarded-for"]?.toString().split(",")[0] || "").trim() ||
+    req.socket.remoteAddress;
+
+  console.log("🌍 IP:", ip, "|", req.method, req.originalUrl);
+  console.log("x-forwarded-for:", req.headers["x-forwarded-for"]);
+  next();
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
