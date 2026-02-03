@@ -10,7 +10,8 @@ const courseSchema = new mongoose.Schema(
     semester: { type: String, enum: ["first", "second"], default: "first" },
     session: { type: String, default: "2025/2026" },
 
-    lecturer: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+    lecturer: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    students: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },
   { timestamps: true }
 );

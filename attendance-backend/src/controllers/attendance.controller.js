@@ -116,8 +116,17 @@ export const consumeQrTokenAndMark = async (req, res) => {
     }
   }
 
-    const course = await Course.findById(session.course);
-    if (!course) return res.status(404).json({ message: "Course not found" });
+     const course = await Course.findById(session.course).select("students");
+  if (!course) return res.status(404).json({ message: "Course not found" });
+
+  const studentId = String(req.user._id);
+  const enrolled = course.students?.some((id) => String(id) === studentId);
+
+  if (!enrolled) {
+    return res.status(403).json({
+      message: "You are not enrolled in this course.",
+    });
+  }
 
     const exists = await Attendance.findOne({
       session: session._id,
@@ -125,7 +134,7 @@ export const consumeQrTokenAndMark = async (req, res) => {
     });
 
     if (exists) {
-      return res.status(200).json({ message: "Already marked ✅" });
+      return res.status(200).json({ message: "You have already marked attendance for this session." });
     }
 
     await Attendance.create({

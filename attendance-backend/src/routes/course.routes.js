@@ -20,7 +20,7 @@ router.get("/", listCourses);
 router.post("/", authorize("admin"), createCourse);
 router.patch("/:courseId/assign-lecturer", authorize("admin"), assignLecturer);
 
-router.post("/:courseId/enroll", authorize("admin"), enrollStudent);
+router.post("/courses/:courseId/enroll", authorize("admin"), enrollStudent);
 
 router.get("/me/enrollments", authorize("student"), myEnrollments);
 router.get("/:courseId/enrollments", authorize("admin", "lecturer"), courseEnrollments);
